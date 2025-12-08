@@ -1,1 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+/* Áp dụng font cho toàn web */
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+@import "tailwindcss";
+
+@keyframes gradient-x {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-x {
+  background-size: 200% auto; /* Kéo dài nền ra gấp đôi để có chỗ trượt */
+  animation: gradient-x 3s ease infinite; /* Trượt qua lại trong 3 giây */
+}
+
+
+@keyframes gradient-x {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-x {
+  background-size: 400% 400%; 
+  animation: gradient-x 15s ease infinite;
+}
