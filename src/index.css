@@ -29,3 +29,16 @@ body {
   background-size: 400% 400%; 
   animation: gradient-x 15s ease infinite;
 }
+
+/* ... code cũ ... */
+
+/* --- BACKGROUND PATTERN: DARK BLUE --- */
+.bg-dot-pattern {
+  /* Màu nền: Xanh than đậm (giống màu trời tối trong ảnh) */
+  background-color: #F0F9FF; 
+  
+  /* Màu chấm: Chuyển sang màu trắng với độ mờ 15% để không bị chói */
+  background-image: radial-gradient(#CBD5E1 2px, transparent 2px);
+  
+  background-size: 24px 24px;
+}

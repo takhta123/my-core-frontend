@@ -2,6 +2,9 @@ import React, { type JSX } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import AuthPage from './pages/AuthPage';
+import HomePage from './pages/HomePage';
+import MainLayout from './layouts/MainLayout';
+
 
 // --- COMPONENT BẢO VỆ (PRIVATE ROUTE) ---
 // Nhiệm vụ: Kiểm tra xem user có token chưa.
@@ -36,37 +39,34 @@ const App: React.FC = () => {
       {/* 2. CẤU HÌNH ROUTER (ĐIỀU HƯỚNG) */}
       <BrowserRouter>
         <Routes>
-          {/* Route Công khai: Đăng nhập & Đăng ký dùng chung giao diện AuthPage */}
+          {/* Route Công khai */}
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
 
-          {/* Route Bảo mật: Trang chủ (Dashboard) */}
+          {/* Route Bảo mật (Bọc trong MainLayout) */}
           <Route 
             path="/" 
             element={
               <PrivateRoute>
-                 {/* Tạm thời để placeholder, sau này sẽ thay bằng <HomePage /> */}
-                 <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                      🎉 Chào mừng bạn đến với Note App!
-                    </h1>
-                    <p className="text-gray-500 mb-8">Bạn đã đăng nhập thành công.</p>
-                    
-                    <button 
-                      onClick={() => {
-                        localStorage.removeItem('token');
-                        window.location.href = '/login';
-                      }}
-                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                    >
-                      Đăng xuất
-                    </button>
-                 </div>
+                <MainLayout>
+                  <HomePage />
+                </MainLayout>
               </PrivateRoute>
             } 
           />
 
-          {/* Route 404: Nếu nhập linh tinh thì đá về Home (hoặc Login) */}
+          {/* Các trang khác sau này cũng bọc trong MainLayout */}
+          <Route 
+            path="/reminders" 
+            element={
+              <PrivateRoute>
+                <MainLayout>
+                  <div>Trang Lời nhắc (Đang phát triển)</div>
+                </MainLayout>
+              </PrivateRoute>
+            } 
+          />
+
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
