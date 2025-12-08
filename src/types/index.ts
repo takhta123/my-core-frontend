@@ -57,3 +57,41 @@ export interface AuthResponse {
     token: string;
     authenticated: boolean;
 }
+
+// ... (Giữ nguyên các interface User, Label, Note... cũ)
+
+// --- THÊM CÁC INTERFACE REQUEST DƯỚI ĐÂY ---
+
+// Dữ liệu gửi lên khi Đăng nhập (Khớp với LoginRequest.java)
+export interface LoginRequest {
+    email: string;
+    password: string;
+    deviceId?: string;    // Dấu ? nghĩa là có thể không có (optional)
+    deviceToken?: string;
+    deviceType?: string;
+}
+
+// Dữ liệu gửi lên khi Đăng ký (Khớp với RegisterRequest.java)
+export interface RegisterRequest {
+    email: string;
+    password: string;
+    fullName: string;
+}
+
+// Dữ liệu gửi lên khi Xác thực (Khớp với VerifyRequest.java)
+export interface VerifyRequest {
+    email: string;
+    code: string;
+}
+
+// Dữ liệu gửi lên khi Quên mật khẩu
+export interface ForgotPasswordRequest {
+    email: string;
+}
+
+// Dữ liệu gửi lên khi Đặt lại mật khẩu
+export interface ResetPasswordRequest {
+    email: string;
+    code: string;
+    newPassword: string;
+}
