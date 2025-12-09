@@ -95,3 +95,10 @@ export interface ResetPasswordRequest {
     code: string;
     newPassword: string;
 }
+
+export interface GoogleLoginRequest {
+    idToken: string;       // Token lấy từ Firebase/Google
+    deviceId?: string;     // Tùy chọn: ID thiết bị
+    deviceToken?: string;  // Tùy chọn: FCM Token để push notification
+    deviceType?: string;   // Tùy chọn: WEB/ANDROID/IOS
+}
