@@ -32,25 +32,41 @@ export const authApi = {
 };
 
 export const noteApi = {
-    // Lấy danh sách (Có phân trang)
+    // --- CÁC HÀM CŨ (Giữ nguyên) ---
     getAll: (page: number = 0, size: number = 10) => 
         axiosClient.get(`/notes?page=${page}&size=${size}`),
 
-    // Tạo mới
     create: (data: NoteRequest) => axiosClient.post('/notes', data),
 
-    // Cập nhật
     update: (id: number, data: NoteRequest) => axiosClient.put(`/notes/${id}`, data),
 
-    // Xóa mềm (Vào thùng rác)
+    // Hàm này dùng để đưa vào thùng rác (Soft delete)
     delete: (id: number) => axiosClient.delete(`/notes/${id}`),
 
-    // Lưu trữ
+    // Hàm này dùng để lưu trữ
     archive: (id: number) => axiosClient.put(`/notes/${id}/archive`),
 
-    // Gán nhãn
     addLabel: (noteId: number, labelId: number) => 
         axiosClient.post(`/notes/${noteId}/labels/${labelId}`),
+
+    // --- CÁC HÀM MỚI (THÊM VÀO) ---
+
+    // 1. Lấy danh sách đã Lưu trữ
+    getArchived: (page: number = 0, size: number = 10) => 
+        axiosClient.get(`/notes/archived?page=${page}&size=${size}`),
+
+    // 2. Lấy danh sách Thùng rác
+    getTrashed: (page: number = 0, size: number = 10) => 
+        axiosClient.get(`/notes/trash?page=${page}&size=${size}`),
+
+    // 3. Khôi phục từ thùng rác
+    restore: (id: number) => axiosClient.put(`/notes/${id}/restore`),
+
+    // 4. Xóa vĩnh viễn (Hard Delete)
+    deleteForever: (id: number) => axiosClient.delete(`/notes/${id}/permanent`),
+    
+    // 5. Bỏ lưu trữ (Unarchive)
+    unarchive: (id: number) => axiosClient.put(`/notes/${id}/unarchive`),
 };
 
 export default axiosClient;

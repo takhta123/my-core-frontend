@@ -3,7 +3,7 @@ import { message, Dropdown, MenuProps } from 'antd';
 import { Image, CheckSquare, Paintbrush, Undo, Redo, Palette } from 'lucide-react'; 
 import { noteApi } from '../api/axiosClient';
 import { NoteRequest } from '../types';
-import { NOTE_COLORS } from './NoteCard'; // Import bộ màu chung
+import { NOTE_COLORS } from './NoteCard'; 
 
 interface CreateNoteInputProps {
   onSuccess?: () => void;
@@ -16,8 +16,10 @@ const CreateNoteInput: React.FC<CreateNoteInputProps> = ({ onSuccess }) => {
   const [bgColor, setBgColor] = useState('#ffffff');
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Xử lý click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Kiểm tra xem click có nằm trong containerRef không
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         if (isExpanded) {
              handleCollapse();
@@ -45,7 +47,7 @@ const CreateNoteInput: React.FC<CreateNoteInputProps> = ({ onSuccess }) => {
       content: content,
       isPinned: false,
       isArchived: false,
-      backgroundColor: bgColor // Gửi màu đã chọn
+      backgroundColor: bgColor // Gửi màu
     };
 
     try {
@@ -65,7 +67,6 @@ const CreateNoteInput: React.FC<CreateNoteInputProps> = ({ onSuccess }) => {
 
   const currentStyle = NOTE_COLORS.find(c => c.hex.toLowerCase() === bgColor.toLowerCase()) || NOTE_COLORS[0];
 
-  // Menu chọn màu (Dropdown Click)
   const colorMenu: MenuProps['items'] = NOTE_COLORS.map((color) => ({
     key: color.hex,
     label: (
@@ -81,8 +82,8 @@ const CreateNoteInput: React.FC<CreateNoteInputProps> = ({ onSuccess }) => {
     <div className="flex justify-center mb-8 mt-4 px-2">
       <div 
         ref={containerRef}
-        // Áp dụng style backgroundColor trực tiếp
-        className={`rounded-xl border ${currentStyle.border} shadow-[0_1px_2px_rgba(0,0,0,0.1)] transition-all duration-300 w-full max-w-[600px] overflow-hidden ${isExpanded ? 'shadow-lg' : ''}`}
+        // Áp dụng màu nền
+        className={`rounded-xl border ${currentStyle.border} shadow-[0_1px_2px_rgba(0,0,0,0.1)] transition-all duration-300 w-full max-w-[600px] overflow-visible ${isExpanded ? 'shadow-lg' : ''}`}
         style={{ backgroundColor: bgColor }}
       >
         {!isExpanded ? (
@@ -115,11 +116,15 @@ const CreateNoteInput: React.FC<CreateNoteInputProps> = ({ onSuccess }) => {
               autoFocus
             />
 
-            {/* Footer */}
             <div className={`flex justify-between items-center px-2 py-2 mt-2 border-t border-black/5`}>
                <div className="flex gap-1 text-gray-600 px-2">
-                  {/* Nút Đổi màu dùng Dropdown chuẩn */}
-                  <Dropdown menu={{ items: colorMenu }} trigger={['click']} placement="top">
+                  <Dropdown 
+                    menu={{ items: colorMenu }} 
+                    trigger={['click']} 
+                    placement="top"
+                    // QUAN TRỌNG: Giúp dropdown render vào trong containerRef để không bị coi là "Click Outside"
+                    getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                  >
                     <button className="hover:bg-black/5 p-2 rounded-full transition-colors" title="Đổi màu nền">
                         <Palette size={18}/>
                     </button>

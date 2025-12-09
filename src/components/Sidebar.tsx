@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { 
   StickyNote, 
   Bell, 
@@ -9,6 +9,7 @@ import {
   Settings,
   X 
 } from 'lucide-react';
+
 
 interface SidebarProps {
   isOpen: boolean;

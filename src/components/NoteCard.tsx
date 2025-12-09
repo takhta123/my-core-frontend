@@ -5,7 +5,7 @@ import { Typography, Dropdown, MenuProps } from 'antd';
 
 const { Paragraph } = Typography;
 
-// Export để dùng chung
+// Export bộ màu để dùng chung
 export const NOTE_COLORS = [
   { hex: '#ffffff', name: 'Trắng', body: 'bg-white', footer: 'bg-gray-100', border: 'border-gray-300' },
   { hex: '#f0f9ff', name: 'Xanh Dương', body: 'bg-sky-50', footer: 'bg-sky-200', border: 'border-sky-300' },
@@ -32,7 +32,6 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
     month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 
-  // Tìm style border/footer tương ứng (So sánh không phân biệt hoa thường)
   const currentStyle = NOTE_COLORS.find(c => c.hex.toLowerCase() === (note.backgroundColor || '#ffffff').toLowerCase()) || NOTE_COLORS[0];
 
   const colorMenu: MenuProps['items'] = NOTE_COLORS.map((color) => ({
@@ -43,8 +42,8 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
         <span className="text-sm font-medium text-gray-700">{color.name}</span>
       </div>
     ),
-    onClick: (e) => {
-        e.domEvent.stopPropagation();
+    // SỬA: Bỏ e.domEvent.stopPropagation() thừa thãi
+    onClick: () => {
         onChangeColor?.(note.id, color.hex);
     }
   }));
@@ -55,11 +54,10 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
     <div 
       className={`group relative rounded-2xl mb-4 transition-all duration-300 border-[3px] ${currentStyle.border} flex flex-col overflow-hidden shadow-sm hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)] hover:-translate-y-1`}
     >
-      {/* Body: Click để sửa */}
       <div 
         onClick={() => !note.isDeleted && onEdit?.(note)}
-        // QUAN TRỌNG: Thêm style backgroundColor trực tiếp
         className={`flex-1 flex flex-col cursor-pointer transition-colors duration-300`}
+        // SỬA: Đảm bảo style background luôn được áp dụng
         style={{ backgroundColor: note.backgroundColor || '#ffffff' }}
       >
         {coverImage && (
@@ -89,19 +87,24 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
         </div>
       </div>
 
-      {/* Footer */}
-      <div className={`px-4 py-3 ${currentStyle.footer} flex justify-end items-center border-t-2 ${currentStyle.border} min-h-[48px] transition-colors duration-300`}>
+      <div className={`px-4 py-3 ${currentStyle.footer} flex justify-between items-center border-t-2 ${currentStyle.border} min-h-[48px] transition-colors duration-300`}>
+          <span className="text-xs font-bold text-gray-600 flex items-center gap-2 select-none">
+            <Clock size={14} /> {formattedDate}
+          </span>
+
           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             {!note.isDeleted ? (
                 <>
-                    {/* Bọc div chặn sự kiện click lan ra ngoài */}
-                    <div onClick={(e) => e.stopPropagation()}>
-                        <Dropdown menu={{ items: colorMenu }} trigger={['click']} placement="top">
-                            <button className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors" title="Đổi màu">
-                                <Palette size={18} />
-                            </button>
-                        </Dropdown>
-                    </div>
+                    {/* SỬA: Xóa div bao ngoài, gắn stopPropagation trực tiếp vào button */}
+                    <Dropdown menu={{ items: colorMenu }} trigger={['click']} placement="top">
+                        <button 
+                            onClick={(e) => e.stopPropagation()} // Chặn click lan ra Card tại đây
+                            className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors" 
+                            title="Đổi màu"
+                        >
+                            <Palette size={18} />
+                        </button>
+                    </Dropdown>
 
                     <button onClick={(e) => {e.stopPropagation(); onArchive?.(note.id)}} className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors" title="Lưu trữ"><Archive size={18} /></button>
                     <button onClick={(e) => {e.stopPropagation(); onDelete?.(note.id)}} className="p-2 hover:bg-red-100 rounded-full text-red-600 transition-colors" title="Xóa"><Trash2 size={18} /></button>
