@@ -1,15 +1,13 @@
 import React from 'react';
 import { Note } from '../types';
-import { Pin, Trash2, Archive, RotateCcw, Palette } from 'lucide-react';
+import { Pin, Trash2, Archive, RotateCcw, Palette, Clock } from 'lucide-react';
 import { Typography, Dropdown, MenuProps } from 'antd';
 
 const { Paragraph } = Typography;
 
-// --- 1. BỘ MÀU MỚI (ĐẬM HƠN, TƯƠNG PHẢN CAO HƠN) ---
+// Export để dùng chung
 export const NOTE_COLORS = [
-  // White: Border xám rõ, Footer xám nhẹ
   { hex: '#ffffff', name: 'Trắng', body: 'bg-white', footer: 'bg-gray-100', border: 'border-gray-300' },
-  // Các màu khác: Border mức 300, Footer mức 200, Body mức 50
   { hex: '#f0f9ff', name: 'Xanh Dương', body: 'bg-sky-50', footer: 'bg-sky-200', border: 'border-sky-300' },
   { hex: '#fdf2f8', name: 'Hồng', body: 'bg-pink-50', footer: 'bg-pink-200', border: 'border-pink-300' },
   { hex: '#fff7ed', name: 'Cam', body: 'bg-orange-50', footer: 'bg-orange-200', border: 'border-orange-300' },
@@ -30,14 +28,18 @@ interface NoteCardProps {
 
 const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onArchive, onRestore, onChangeColor }) => {
   
-  // Tìm style dựa trên mã màu
-  const currentStyle = NOTE_COLORS.find(c => c.hex === note.backgroundColor) || NOTE_COLORS[0];
+  const formattedDate = new Date(note.createdAt || new Date()).toLocaleString('vi-VN', {
+    month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+
+  // Tìm style border/footer tương ứng (So sánh không phân biệt hoa thường)
+  const currentStyle = NOTE_COLORS.find(c => c.hex.toLowerCase() === (note.backgroundColor || '#ffffff').toLowerCase()) || NOTE_COLORS[0];
 
   const colorMenu: MenuProps['items'] = NOTE_COLORS.map((color) => ({
     key: color.hex,
     label: (
       <div className="flex items-center gap-2">
-        <div className={`w-6 h-6 rounded-full border border-gray-300 ${color.body}`}></div>
+        <div className={`w-6 h-6 rounded-full border border-gray-300`} style={{ backgroundColor: color.hex }}></div>
         <span className="text-sm font-medium text-gray-700">{color.name}</span>
       </div>
     ),
@@ -51,13 +53,14 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
 
   return (
     <div 
-      // THAY ĐỔI: border-[3px] để viền to hơn
       className={`group relative rounded-2xl mb-4 transition-all duration-300 border-[3px] ${currentStyle.border} flex flex-col overflow-hidden shadow-sm hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)] hover:-translate-y-1`}
     >
-      {/* Body */}
+      {/* Body: Click để sửa */}
       <div 
         onClick={() => !note.isDeleted && onEdit?.(note)}
-        className={`flex-1 flex flex-col cursor-pointer ${currentStyle.body} transition-colors duration-300`}
+        // QUAN TRỌNG: Thêm style backgroundColor trực tiếp
+        className={`flex-1 flex flex-col cursor-pointer transition-colors duration-300`}
+        style={{ backgroundColor: note.backgroundColor || '#ffffff' }}
       >
         {coverImage && (
             <div className={`w-full h-40 overflow-hidden border-b-2 ${currentStyle.border}`}>
@@ -86,17 +89,19 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
         </div>
       </div>
 
-      {/* Footer: Đậm hơn, KHÔNG còn hiển thị ngày tháng */}
+      {/* Footer */}
       <div className={`px-4 py-3 ${currentStyle.footer} flex justify-end items-center border-t-2 ${currentStyle.border} min-h-[48px] transition-colors duration-300`}>
-          
           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             {!note.isDeleted ? (
                 <>
-                    <Dropdown menu={{ items: colorMenu }} trigger={['click']} placement="top">
-                        <button onClick={(e) => e.stopPropagation()} className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors" title="Đổi màu">
-                            <Palette size={18} />
-                        </button>
-                    </Dropdown>
+                    {/* Bọc div chặn sự kiện click lan ra ngoài */}
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <Dropdown menu={{ items: colorMenu }} trigger={['click']} placement="top">
+                            <button className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors" title="Đổi màu">
+                                <Palette size={18} />
+                            </button>
+                        </Dropdown>
+                    </div>
 
                     <button onClick={(e) => {e.stopPropagation(); onArchive?.(note.id)}} className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors" title="Lưu trữ"><Archive size={18} /></button>
                     <button onClick={(e) => {e.stopPropagation(); onDelete?.(note.id)}} className="p-2 hover:bg-red-100 rounded-full text-red-600 transition-colors" title="Xóa"><Trash2 size={18} /></button>
