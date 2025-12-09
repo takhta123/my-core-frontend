@@ -102,3 +102,12 @@ export interface GoogleLoginRequest {
     deviceToken?: string;  // Tùy chọn: FCM Token để push notification
     deviceType?: string;   // Tùy chọn: WEB/ANDROID/IOS
 }
+
+export interface NoteRequest {
+    title: string;
+    content: string;
+    backgroundColor?: string; // Màu nền (Optional)
+    isPinned: boolean;        // Ghim
+    isArchived: boolean;      // Lưu trữ
+    reminder?: string | null; // Thời gian nhắc nhở (ISO Date String)
+}
