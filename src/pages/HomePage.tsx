@@ -14,17 +14,21 @@ import CreateNoteInput from '../components/CreateNoteInput';
 const HomePage: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // --- API GET ALL ---
   const fetchNotes = async () => {
     try {
-      const response: any = await noteApi.getAll(0, 50);
+      const response: any = await noteApi.getAll(0, 50); // Lấy 50 note để test masonry
       if (response.code === 1000) {
         setNotes(response.result.content);
       }
-    } catch (error) { console.error(error); } 
-    finally { setLoading(false); }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchNotes(); }, []);
@@ -93,10 +97,14 @@ const HomePage: React.FC = () => {
           fetchNotes();
       }
   };
-// Hàm cập nhật UI sau khi sửa xong
-  const updateNoteInList = (updatedNote: Note) => {
+
+  const handleEditNote = (note: Note) => {
+      setSelectedNote(note);
+      setIsModalOpen(true);
+  };
+
+  const handleUpdateSuccess = (updatedNote: Note) => {
       setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
-      setEditingNote(null); // Đóng modal
   };
 
   const breakpointColumnsObj = { default: 4, 1100: 3, 700: 2, 500: 1 };
@@ -117,42 +125,34 @@ const HomePage: React.FC = () => {
         </motion.div>
       )}
 
-     {!loading && notes.length > 0 && (
+      {!loading && notes.length > 0 && (
         <Masonry breakpointCols={breakpointColumnsObj} className="flex w-auto -ml-4" columnClassName="pl-4 bg-clip-padding">
             {notes.map((note) => (
-            <motion.div key={note.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+            <motion.div key={note.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
                 <NoteCard 
                     note={note} 
                     onDelete={handleDelete}
                     onArchive={handleArchive}
                     onPin={handlePin}
-                    onChangeColor={handleColorChange}
-                    onEdit={(n) => setEditingNote(n)} // <--- Bấm vào note thì set state này
+                    onChangeColor={handleColorChange} // Đã thêm
+                    onEdit={handleEditNote}         // Đã thêm
                 />
             </motion.div>
             ))}
         </Masonry>
       )}
 
-      {/* 3. EDIT MODAL OVERLAY (Đoạn code bạn yêu cầu) */}
-      {editingNote && (
-        <div 
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
-            onClick={(e) => {
-                // Đóng khi click vào vùng đen (overlay)
-                if (e.target === e.currentTarget) setEditingNote(null);
-            }}
-        >
-          <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
-             {/* Tái sử dụng CreateNoteInput ở chế độ Edit */}
-             <CreateNoteInput 
-                existingNote={editingNote} 
-                onUpdate={updateNoteInList}
-                onClose={() => setEditingNote(null)}
-             />
-          </div>
-        </div>
-      )}
+      <NoteModal 
+        isOpen={isModalOpen}
+        note={selectedNote}
+        onClose={() => setIsModalOpen(false)}
+        onUpdate={handleUpdateSuccess}
+        // --- THÊM CÁC PROPS SAU ---
+        onPin={handlePin}
+        onArchive={handleArchive}
+        onDelete={handleDelete}
+        // --------------------------
+      />
 
     </div>
   );
