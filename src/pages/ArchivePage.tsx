@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { message, Spin } from 'antd';
 import { LoadingOutlined, InboxOutlined } from '@ant-design/icons';
 import { noteApi } from '../api/axiosClient';
-import { Note } from '../types';
+import { Note, NoteRequest } from '../types';
 import NoteCard from '../components/NoteCard';
 import NoteModal from '../components/NoteModal';
 
@@ -14,7 +14,6 @@ const ArchivePage: React.FC = () => {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- API: Lấy danh sách Lưu trữ ---
   const fetchNotes = async () => {
     try {
       const response: any = await noteApi.getArchived(0, 50);
@@ -27,33 +26,55 @@ const ArchivePage: React.FC = () => {
 
   useEffect(() => { fetchNotes(); }, []);
 
-  // --- HANDLER: Bỏ lưu trữ (Trả về trang chủ) ---
+  // --- HANDLER: Bỏ lưu trữ ---
   const handleUnarchive = async (id: number) => {
     try {
-      await noteApi.unarchive(id); 
-      setNotes(prev => prev.filter(n => n.id !== id)); // Xóa khỏi danh sách hiện tại
+      await noteApi.unarchive(id);
+      setNotes(prev => prev.filter(n => n.id !== id));
       message.success("Đã chuyển về ghi chú chính");
     } catch (e) { message.error("Lỗi bỏ lưu trữ"); }
   };
 
-  // --- HANDLER: Xóa mềm (Đưa vào thùng rác) ---
   const handleDelete = async (id: number) => {
     try {
-      await noteApi.delete(id); 
+      await noteApi.delete(id);
       setNotes(prev => prev.filter(n => n.id !== id));
       message.success("Đã chuyển vào thùng rác");
     } catch (e) { message.error("Lỗi xóa"); }
   };
 
-  // Mở modal sửa
+  // --- HANDLER: Ghim (Ghim + Unarchive) ---
+  const handlePin = async (id: number) => {
+      const note = notes.find(n => n.id === id);
+      if(!note) return;
+
+      // Optimistic: Xóa khỏi danh sách Archive ngay lập tức
+      setNotes(prev => prev.filter(n => n.id !== id));
+      message.success("Đã ghim và chuyển về trang chính");
+
+      try {
+          // Gọi API Update: Pin=True, Archive=False
+          const updateData: NoteRequest = {
+              title: note.title,
+              content: note.content,
+              isPinned: true,    // Bật ghim
+              isArchived: false, // Tắt lưu trữ
+              backgroundColor: note.backgroundColor,
+              reminder: note.reminder
+          };
+          await noteApi.update(id, updateData);
+      } catch (e) {
+          message.error("Lỗi khi ghim");
+          fetchNotes(); // Revert
+      }
+  };
+
   const openEditModal = (note: Note) => {
       setEditingNote(note);
       setIsModalOpen(true);
   };
 
-  // Cập nhật sau khi sửa
   const handleUpdateSuccess = (updatedNote: Note) => {
-      // Nếu sau khi sửa mà note không còn là archived (do user bỏ lưu trữ trong modal) -> Xóa khỏi list
       if (!updatedNote.isArchived) {
           setNotes(prev => prev.filter(n => n.id !== updatedNote.id));
       } else {
@@ -66,7 +87,6 @@ const ArchivePage: React.FC = () => {
 
   return (
     <div className="pb-10 px-4">
-      {/* Header đơn giản */}
       <div className="py-6 flex items-center gap-2 text-gray-600 border-b border-gray-100 mb-4">
         <InboxOutlined className="text-2xl" />
         <h1 className="text-2xl font-bold">Lưu trữ</h1>
@@ -88,9 +108,9 @@ const ArchivePage: React.FC = () => {
                 <NoteCard 
                     note={note} 
                     onDelete={handleDelete}
-                    onArchive={handleUnarchive} // TRUYỀN HÀM UNARCHIVE VÀO ĐÂY
+                    onArchive={handleUnarchive}
+                    onPin={handlePin} // TRUYỀN HÀM GHIM ĐẶC BIỆT
                     onEdit={openEditModal}
-                    // onPin: Thường không cho ghim trong Archive, hoặc nếu ghim thì tự unarchive (tùy logic)
                 />
             </motion.div>
             ))}

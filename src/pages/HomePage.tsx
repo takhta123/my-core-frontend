@@ -7,7 +7,6 @@ import { noteApi } from '../api/axiosClient';
 import { Note, NoteRequest } from '../types';
 import mascotZero from '../assets/Mascot zero notes.png';
 
-// Import Components
 import NoteCard from '../components/NoteCard';
 import CreateNoteInput from '../components/CreateNoteInput'; 
 import NoteModal from '../components/NoteModal'; 
@@ -16,11 +15,10 @@ const HomePage: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // State quản lý Edit Modal
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- 1. LẤY DỮ LIỆU ---
+  // --- API: Lấy danh sách ---
   const fetchNotes = async () => {
     try {
       const response: any = await noteApi.getAll(0, 50);
@@ -33,12 +31,12 @@ const HomePage: React.FC = () => {
 
   useEffect(() => { fetchNotes(); }, []);
 
-  // --- 2. XỬ LÝ XÓA & LƯU TRỮ ---
+  // --- HANDLER: Xóa & Lưu trữ ---
   const handleDelete = async (id: number) => {
     try {
       await noteApi.delete(id);
       setNotes(prev => prev.filter(n => n.id !== id));
-      message.success("Đã xóa");
+      message.success("Đã chuyển vào thùng rác");
     } catch (e) { message.error("Lỗi xóa"); }
   };
 
@@ -50,76 +48,88 @@ const HomePage: React.FC = () => {
     } catch (e) { message.error("Lỗi lưu trữ"); }
   };
 
-  // --- 3. XỬ LÝ GHIM (UPDATE) ---
+  const sortNotes = (notesList: Note[]) => {
+      return [...notesList].sort((a, b) => {
+          // Ưu tiên ghim
+          if (a.isPinned === b.isPinned) {
+              // Nếu cùng trạng thái ghim -> So sánh NGÀY TẠO (createdAt)
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
+          return a.isPinned ? -1 : 1;
+      });
+  };
+
+  // --- HANDLER: Ghim ---
   const handlePin = async (id: number) => {
       const note = notes.find(n => n.id === id);
       if(!note) return;
       
       const newStatus = !note.isPinned;
-      // Optimistic Update
-      setNotes(prev => prev.map(n => n.id === id ? { ...n, isPinned: newStatus } : n));
+
+      setNotes(prev => {
+          const updated = prev.map(n => n.id === id ? { ...n, isPinned: newStatus } : n);
+          return sortNotes(updated); // <--- Gọi hàm sort theo createdAt
+      });
 
       try {
           const updateData: NoteRequest = {
               title: note.title,
               content: note.content,
-              isPinned: newStatus,
+              isPinned: newStatus, 
               isArchived: note.isArchived,
               backgroundColor: note.backgroundColor,
               reminder: note.reminder
           };
           await noteApi.update(id, updateData);
       } catch (e) {
-          message.error("Lỗi ghim note");
-          fetchNotes(); // Revert nếu lỗi
+          message.error("Lỗi khi ghim");
+          fetchNotes(); // Revert
       }
   };
 
-  // --- 4. XỬ LÝ ĐỔI MÀU (ĐÃ SỬA LOGIC) ---
   const handleColorChange = async (id: number, color: string) => {
       const note = notes.find(n => n.id === id);
       if(!note) return;
 
-      // 1. Cập nhật giao diện ngay lập tức
       setNotes(prev => prev.map(n => n.id === id ? { ...n, backgroundColor: color } : n));
 
       try {
-          // 2. Gọi API Update
           const updateData: NoteRequest = {
               title: note.title,
               content: note.content,
               isPinned: note.isPinned,
               isArchived: note.isArchived,
-              backgroundColor: color, // Màu mới
+              backgroundColor: color,
               reminder: note.reminder
           };
           await noteApi.update(id, updateData);
-      } catch (e) {
-          message.error("Lỗi đổi màu");
-          fetchNotes(); // Revert
-      }
+      } catch (e) { fetchNotes(); }
   };
 
-  // Mở Modal Sửa
   const openEditModal = (note: Note) => {
       setEditingNote(note);
       setIsModalOpen(true);
   };
 
   const handleUpdateSuccess = (updatedNote: Note) => {
-      setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
+      setNotes(prev => {
+        const newNotes = prev.map(n => n.id === updatedNote.id ? updatedNote : n);
+        return sortNotes(newNotes); // <--- Gọi hàm sort theo createdAt
+      });
   };
-
   const breakpointColumnsObj = { default: 4, 1100: 3, 700: 2, 500: 1 };
   const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
 
+  // --- TÁCH MẢNG NOTE THÀNH 2 PHẦN ---
+  const pinnedNotes = notes.filter(n => n.isPinned);
+  const otherNotes = notes.filter(n => !n.isPinned);
+
   return (
     <div className="pb-10 px-4">
-      {/* Create Note */}
       <CreateNoteInput onSuccess={fetchNotes} />
 
-      {/* Loading & Empty State */}
       {loading && <div className="flex justify-center my-10"><Spin indicator={antIcon} /></div>}
+      
       {!loading && notes.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center mt-10 text-center">
             <img src={mascotZero} alt="Empty" className="w-48 h-48 object-cover mb-6 opacity-80" />
@@ -127,25 +137,52 @@ const HomePage: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Note List */}
-      {!loading && notes.length > 0 && (
-        <Masonry breakpointCols={breakpointColumnsObj} className="flex w-auto -ml-4" columnClassName="pl-4 bg-clip-padding">
-            {notes.map((note) => (
-            <motion.div key={note.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-                <NoteCard 
-                    note={note} 
-                    onDelete={handleDelete}
-                    onArchive={handleArchive}
-                    onPin={handlePin}
-                    onChangeColor={handleColorChange} // Đã kết nối hàm xử lý
-                    onEdit={openEditModal}
-                />
-            </motion.div>
-            ))}
-        </Masonry>
+      {/* --- PHẦN 1: GHI CHÚ ĐƯỢC GHIM --- */}
+      {!loading && pinnedNotes.length > 0 && (
+        <div className="mb-8">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 pl-2">Được ghim</h3>
+            <Masonry breakpointCols={breakpointColumnsObj} className="flex w-auto -ml-4" columnClassName="pl-4 bg-clip-padding">
+                {pinnedNotes.map((note) => (
+                <motion.div key={note.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+                    <NoteCard 
+                        note={note} 
+                        onDelete={handleDelete}
+                        onArchive={handleArchive}
+                        onPin={handlePin}
+                        onChangeColor={handleColorChange}
+                        onEdit={openEditModal}
+                    />
+                </motion.div>
+                ))}
+            </Masonry>
+        </div>
       )}
 
-      {/* Edit Modal */}
+      {/* --- PHẦN 2: GHI CHÚ KHÁC --- */}
+      {!loading && otherNotes.length > 0 && (
+        <div>
+            {/* Chỉ hiện tiêu đề "Khác" nếu có mục được ghim */}
+            {pinnedNotes.length > 0 && (
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 pl-2">Khác</h3>
+            )}
+            
+            <Masonry breakpointCols={breakpointColumnsObj} className="flex w-auto -ml-4" columnClassName="pl-4 bg-clip-padding">
+                {otherNotes.map((note) => (
+                <motion.div key={note.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+                    <NoteCard 
+                        note={note} 
+                        onDelete={handleDelete}
+                        onArchive={handleArchive}
+                        onPin={handlePin}
+                        onChangeColor={handleColorChange}
+                        onEdit={openEditModal}
+                    />
+                </motion.div>
+                ))}
+            </Masonry>
+        </div>
+      )}
+
       <NoteModal 
         isOpen={isModalOpen}
         note={editingNote}

@@ -1,30 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import Masonry from 'react-masonry-css';
 import { motion } from 'framer-motion';
-import { message, Spin, Modal } from 'antd';
+import { message, Spin, Modal, Empty } from 'antd';
 import { LoadingOutlined, DeleteOutlined } from '@ant-design/icons';
 import { noteApi } from '../api/axiosClient';
 import { Note } from '../types';
 import NoteCard from '../components/NoteCard';
+import NoteModal from '../components/NoteModal'; // Import Modal
 
 const TrashPage: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewingNote, setViewingNote] = useState<Note | null>(null); // State xem note
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- API: Lấy danh sách Thùng rác ---
   const fetchNotes = async () => {
     try {
       const response: any = await noteApi.getTrashed(0, 50);
       if (response.code === 1000) {
         setNotes(response.result.content);
       }
-    } catch (error) { console.error(error); } 
+    } catch (error) { console.error(error); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchNotes(); }, []);
 
-  // --- HANDLER: Khôi phục ---
   const handleRestore = async (id: number) => {
     try {
       await noteApi.restore(id);
@@ -33,11 +34,10 @@ const TrashPage: React.FC = () => {
     } catch (e) { message.error("Lỗi khôi phục"); }
   };
 
-  // --- HANDLER: Xóa vĩnh viễn ---
   const handleDeleteForever = (id: number) => {
     Modal.confirm({
         title: 'Xóa vĩnh viễn?',
-        content: 'Bạn không thể hoàn tác hành động này. Ghi chú sẽ bị xóa khỏi hệ thống.',
+        content: 'Bạn không thể hoàn tác hành động này.',
         okText: 'Xóa vĩnh viễn',
         okType: 'danger',
         cancelText: 'Hủy',
@@ -52,24 +52,28 @@ const TrashPage: React.FC = () => {
     });
   };
 
+  // Hàm mở modal xem chi tiết
+  const openViewModal = (note: Note) => {
+      setViewingNote(note);
+      setIsModalOpen(true);
+  };
+
   const breakpointColumnsObj = { default: 4, 1100: 3, 700: 2, 500: 1 };
   const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
 
   return (
     <div className="pb-10 px-4">
-      {/* Header Thông báo */}
-      <div className="py-4 text-center">
-          <div className="inline-flex items-center gap-2 text-gray-500 italic bg-gray-100 px-4 py-2 rounded-full text-sm">
+      <div className="py-6 flex items-center justify-center">
+          <div className="inline-flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-full text-sm font-medium">
             <DeleteOutlined /> Ghi chú trong thùng rác sẽ bị xóa vĩnh viễn sau 7 ngày
           </div>
       </div>
 
-      {loading && <div className="flex justify-center my-10"><Spin indicator={antIcon} /></div>}
+      {loading && <div className="flex justify-center my-20"><Spin indicator={antIcon} /></div>}
 
       {!loading && notes.length === 0 && (
-        <div className="flex flex-col items-center justify-center mt-20 text-center text-gray-400 opacity-60">
-            <DeleteOutlined style={{ fontSize: 64, marginBottom: 16 }} />
-            <p className="text-lg font-medium">Thùng rác trống</p>
+        <div className="mt-20">
+            <Empty image={<DeleteOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />} description={<span className="text-gray-500 font-medium text-lg">Thùng rác trống</span>} />
         </div>
       )}
 
@@ -77,23 +81,29 @@ const TrashPage: React.FC = () => {
         <Masonry breakpointCols={breakpointColumnsObj} className="flex w-auto -ml-4" columnClassName="pl-4 bg-clip-padding">
             {notes.map((note) => (
             <motion.div key={note.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-                <NoteCard 
-                    note={note} 
-                    // Trong thùng rác:
-                    // onDelete đóng vai trò là "Delete Forever"
-                    // onRestore đóng vai trò khôi phục
+                <NoteCard
+                    note={note}
                     onDelete={handleDeleteForever}
                     onRestore={handleRestore}
-                    
-                    // Vô hiệu hóa các chức năng khác
-                    onEdit={() => {}} // Không cho sửa
-                    onPin={undefined} 
+                    // Truyền hàm mở modal vào onEdit để cho phép click xem
+                    onEdit={openViewModal} 
+                    onArchive={undefined}
                     onChangeColor={undefined}
+                    onPin={undefined}
                 />
             </motion.div>
             ))}
         </Masonry>
       )}
+
+      {/* MODAL Ở CHẾ ĐỘ READ-ONLY */}
+      <NoteModal 
+        isOpen={isModalOpen}
+        note={viewingNote}
+        onClose={() => setIsModalOpen(false)}
+        onUpdate={() => {}} // Không cần update gì cả
+        readOnly={true} // Bật chế độ chỉ xem
+      />
     </div>
   );
 };
