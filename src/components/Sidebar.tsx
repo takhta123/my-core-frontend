@@ -50,7 +50,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const systemItems = [
     { icon: Archive, label: 'Lưu trữ', path: '/archive' },
     { icon: Trash2, label: 'Thùng rác', path: '/trash' },
-    { icon: Settings, label: 'Cài đặt', path: '/settings' },
   ];
 
   // Hàm helper để render một nút menu (Tái sử dụng style cũ của bạn)

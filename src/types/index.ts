@@ -1,11 +1,17 @@
 import axiosClient from "../api/axiosClient";
 
-// Định nghĩa User (Dựa trên User.java)
 export interface User {
     id: number;
     email: string;
     fullName: string;
-    avatarUrl?: string; // Có thể null
+    avatarUrl: string; 
+    enabled: boolean;
+    createdAt: string;
+    updatedAt: string;
+    twoFactorEnabled?: boolean; 
+    address?: string;
+    gender?: string;
+    dateOfBirth?: string;
 }
 
 // Định nghĩa Label (Dựa trên Label.java)

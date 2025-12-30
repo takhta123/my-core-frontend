@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Masonry from 'react-masonry-css';
 import { motion } from 'framer-motion';
 import { message, Spin } from 'antd';
@@ -14,14 +15,20 @@ import NoteModal from '../components/NoteModal';
 const HomePage: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [searchParams] = useSearchParams();
+  const searchKeyword = searchParams.get('search') || '';
   
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // --- API: Lấy danh sách ---
   const fetchNotes = async () => {
+    setLoading(true); // Nên set loading true mỗi khi search lại
     try {
-      const response: any = await noteApi.getAll(0, 50);
+      // 3. Truyền searchKeyword vào hàm API
+      // Lưu ý: Backend controller dùng @RequestParam(required=false) String search
+      const response: any = await noteApi.getAll(0, 50, searchKeyword);
       if (response.code === 1000) {
         setNotes(response.result.content);
       }
@@ -29,7 +36,9 @@ const HomePage: React.FC = () => {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchNotes(); }, []);
+  useEffect(() => { 
+      fetchNotes(); 
+  }, [searchKeyword]);
 
   // --- HANDLER: Xóa & Lưu trữ ---
   const handleDelete = async (id: number) => {
@@ -131,9 +140,40 @@ const HomePage: React.FC = () => {
       {loading && <div className="flex justify-center my-10"><Spin indicator={antIcon} /></div>}
       
       {!loading && notes.length === 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center mt-10 text-center">
-            <img src={mascotZero} alt="Empty" className="w-48 h-48 object-cover mb-6 opacity-80" />
-            <h2 className="text-xl font-bold text-gray-600">Chưa có ghi chú nào</h2>
+        <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="flex flex-col items-center justify-center mt-10 text-center"
+        >
+            {searchKeyword ? (
+                <>
+                    <img 
+                        src={mascotZero} 
+                        alt="Not Found" 
+                        className="w-48 h-48 object-cover mb-6 opacity-100" 
+                    />
+                    <h2 className="text-xl font-bold text-gray-500">
+                        Không tìm thấy kết quả cho "{searchKeyword}"
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-2">
+                        Hãy thử tìm bằng từ khóa khác hoặc kiểm tra lại chính tả.
+                    </p>
+                </>
+            ) : (
+                <>
+                    <img 
+                        src={mascotZero} 
+                        alt="Empty" 
+                        className="w-48 h-48 object-cover mb-6 opacity-100" 
+                    />
+                    <h2 className="text-xl font-bold text-gray-600">
+                        Chưa có ghi chú nào
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-2">
+                        Những ghi chú bạn thêm sẽ xuất hiện tại đây.
+                    </p>
+                </>
+            )}
         </motion.div>
       )}
 
