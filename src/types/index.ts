@@ -1,3 +1,5 @@
+import axiosClient from "../api/axiosClient";
+
 // Định nghĩa User (Dựa trên User.java)
 export interface User {
     id: number;
@@ -32,17 +34,15 @@ export interface Note {
     id: number;
     title: string;
     content: string;
-    backgroundColor?: string;
-    isPinned: boolean;    // Backend trả về 'pinned' hay 'isPinned' tùy cấu hình Jackson, ta cứ để isPinned trước
+    isPinned: boolean;
     isArchived: boolean;
     isDeleted: boolean;
-    reminder?: string;    // ISO Date String
-    isReminderSent: boolean;
-    labels: Label[];
-    checklists: Checklist[];
-    attachments: Attachment[];
+    backgroundColor: string;
+    reminder: string | null; // ISO Date String
     createdAt: string;
     updatedAt: string;
+    labels: Label[];          // [MỚI] Danh sách nhãn
+    attachments: Attachment[]; // [MỚI] Danh sách file đính kèm
 }
 
 // Định nghĩa Response chuẩn từ Backend (ApiResponse.java)
@@ -58,11 +58,7 @@ export interface AuthResponse {
     authenticated: boolean;
 }
 
-// ... (Giữ nguyên các interface User, Label, Note... cũ)
 
-// --- THÊM CÁC INTERFACE REQUEST DƯỚI ĐÂY ---
-
-// Dữ liệu gửi lên khi Đăng nhập (Khớp với LoginRequest.java)
 export interface LoginRequest {
     email: string;
     password: string;
@@ -106,8 +102,29 @@ export interface GoogleLoginRequest {
 export interface NoteRequest {
     title: string;
     content: string;
-    backgroundColor?: string; // Màu nền (Optional)
-    isPinned: boolean;        // Ghim
-    isArchived: boolean;      // Lưu trữ
-    reminder?: string | null; // Thời gian nhắc nhở (ISO Date String)
+    isPinned?: boolean;
+    isArchived?: boolean;
+    backgroundColor?: string;
+    reminder?: string | null; // [MỚI] Gửi lên backend
 }
+
+export interface LabelRequest {
+    name: string;
+}
+
+export const attachmentApi = {
+
+    upload: (file: File, noteId: number) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        return axiosClient.post(`/attachments/notes/${noteId}`, formData,{
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+
+    // Xóa file
+    delete: (id: string) => axiosClient.delete(`/attachments/${id}`),
+};

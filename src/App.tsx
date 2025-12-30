@@ -4,8 +4,10 @@ import { ConfigProvider } from 'antd';
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import ArchivePage from './pages/ArchivePage'; 
-import TrashPage from './pages/TrashPage';     
+import TrashPage from './pages/TrashPage';    
+import RemindersPage from './pages/RemindersPage'; 
 import MainLayout from './layouts/MainLayout';
+import LabelPage from './pages/LabelPage';
 
 // --- COMPONENT BẢO VỆ (PRIVATE ROUTE) ---
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
@@ -35,11 +37,11 @@ const App: React.FC = () => {
     >
       <BrowserRouter>
         <Routes>
-          {/* 1. Route Công khai */}
+          {/* 1. Route public */}
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
 
-          {/* 2. Route Bảo mật: Trang Chủ */}
+          {/* 2. Route Homepage*/}
           <Route 
             path="/" 
             element={
@@ -51,7 +53,7 @@ const App: React.FC = () => {
             } 
           />
 
-          {/* 3. Route Bảo mật: Trang Lưu trữ (MỚI) */}
+          {/* 3. Route Archive */}
           <Route 
             path="/archive" 
             element={
@@ -63,7 +65,7 @@ const App: React.FC = () => {
             } 
           />
 
-          {/* 4. Route Bảo mật: Trang Thùng rác (MỚI) */}
+          {/* 4. Route Trash */}
           <Route 
             path="/trash" 
             element={
@@ -75,15 +77,27 @@ const App: React.FC = () => {
             } 
           />
 
-          {/* 5. Route cho các trang đang phát triển khác */}
+          {/* 5. Route reminder*/}
           <Route 
             path="/reminders" 
             element={
               <PrivateRoute>
                 <MainLayout>
-                  <div className="p-10 text-center text-gray-500">Tính năng Lời nhắc đang phát triển...</div>
+                  <RemindersPage />
                 </MainLayout>
               </PrivateRoute>
+            } 
+          />
+
+          {/* 6. Route tag */}
+          <Route 
+            path="/label/:labelId" 
+            element={
+            <PrivateRoute>
+              <MainLayout>
+                <LabelPage />
+              </MainLayout>
+            </PrivateRoute>
             } 
           />
 

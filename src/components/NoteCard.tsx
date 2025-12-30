@@ -1,7 +1,8 @@
+// src/components/NoteCard.tsx
 import React from 'react';
 import { Note } from '../types';
-import { Pin, Trash2, Archive, RotateCcw, Palette, Clock } from 'lucide-react';
-import { Typography, Dropdown, MenuProps } from 'antd';
+import { Pin, Trash2, Archive, RotateCcw, Palette, Clock, Bell } from 'lucide-react'; // [MỚI] Thêm Bell
+import { Typography, Dropdown, MenuProps, Tag } from 'antd'; // [MỚI] Thêm Tag
 
 const { Paragraph } = Typography;
 
@@ -31,9 +32,12 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
     month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 
-  const currentStyle = NOTE_COLORS.find(c => c.hex.toLowerCase() === (note.backgroundColor || '#ffffff').toLowerCase()) || NOTE_COLORS[0];
+  // [MỚI] Xử lý hiển thị thời gian nhắc nhở
+  const hasReminder = note.reminder;
+  const reminderDate = hasReminder ? new Date(note.reminder!) : null;
+  const isOverdue = reminderDate && reminderDate < new Date();
 
-  // LOGIC MỚI: Xác định là thùng rác nếu note bị xóa HOẶC có chức năng restore được truyền vào
+  const currentStyle = NOTE_COLORS.find(c => c.hex.toLowerCase() === (note.backgroundColor || '#ffffff').toLowerCase()) || NOTE_COLORS[0];
   const isTrash = note.isDeleted || !!onRestore;
 
   const colorMenu: MenuProps['items'] = NOTE_COLORS.map((color) => ({
@@ -54,9 +58,8 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
 
   return (
     <div className={`group relative rounded-2xl mb-4 transition-all duration-300 border-[3px] ${currentStyle.border} flex flex-col overflow-hidden shadow-sm hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)] hover:-translate-y-1`}>
-      {/* Body: Click để xem/sửa */}
+      {/* Body */}
       <div 
-        // SỬA: Cho phép click kể cả khi là Trash (để xem chi tiết)
         onClick={() => onEdit?.(note)}
         className={`flex-1 flex flex-col cursor-pointer transition-colors duration-300`}
         style={{ backgroundColor: note.backgroundColor || '#ffffff' }}
@@ -70,7 +73,6 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
         <div className="p-5 flex-1 flex flex-col">
             <div className="flex justify-between items-start mb-2 gap-2">
                 {note.title && <h3 className="font-bold text-gray-800 text-lg leading-snug">{note.title}</h3>}
-                {/* Chỉ hiện nút Pin nếu KHÔNG phải thùng rác */}
                 {!isTrash && (
                     <button 
                         onClick={(e) => { e.stopPropagation(); onPin?.(note.id); }}
@@ -80,12 +82,32 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
                     </button>
                 )}
             </div>
+
+            {/* [MỚI] Hiển thị Lời nhắc */}
+            {hasReminder && reminderDate && (
+                <div className={`flex items-center gap-1 mb-2 text-xs font-semibold px-2 py-1 rounded-md w-fit transition-colors
+                    ${isOverdue ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                    <Bell size={12} fill={isOverdue ? "currentColor" : "none"} />
+                    {reminderDate.toLocaleString('vi-VN', { hour: '2-digit', minute:'2-digit', day:'numeric', month:'numeric' })}
+                </div>
+            )}
             
             <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap font-medium">
                 <Paragraph ellipsis={{ rows: 6, expandable: false }} className="text-gray-700 mb-0 !text-sm">
                     {note.content}
                 </Paragraph>
             </div>
+
+            {/* [MỚI] Hiển thị Nhãn (Labels) */}
+            {note.labels && note.labels.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1">
+                    {note.labels.map(label => (
+                        <Tag key={label.id} bordered={false} className="m-0 bg-black/5 text-gray-600 font-medium text-[11px] px-2 rounded-full">
+                            #{label.name}
+                        </Tag>
+                    ))}
+                </div>
+            )}
         </div>
       </div>
 
@@ -96,9 +118,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
           </span>
 
           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            {/* Logic hiển thị nút bấm dựa trên biến isTrash */}
             {!isTrash ? (
-                // GIAO DIỆN BÌNH THƯỜNG
                 <>
                     <div onClick={(e) => e.stopPropagation()}>
                         <Dropdown menu={{ items: colorMenu }} trigger={['click']} placement="top">
@@ -111,7 +131,6 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onEdit, onPin, onAr
                     <button onClick={(e) => {e.stopPropagation(); onDelete?.(note.id)}} className="p-2 hover:bg-red-100 rounded-full text-red-600 transition-colors" title="Xóa"><Trash2 size={18} /></button>
                 </>
             ) : (
-                // GIAO DIỆN THÙNG RÁC
                 <>
                     <button onClick={(e) => {e.stopPropagation(); onRestore?.(note.id)}} className="p-2 hover:bg-green-100 rounded-full text-green-700 transition-colors" title="Khôi phục"><RotateCcw size={18} /></button>
                     <button onClick={(e) => {e.stopPropagation(); onDelete?.(note.id)}} className="p-2 hover:bg-red-100 rounded-full text-red-600 transition-colors" title="Xóa vĩnh viễn"><Trash2 size={18} /></button>

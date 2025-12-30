@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios';
-import { LoginRequest, RegisterRequest, GoogleLoginRequest, ForgotPasswordRequest, ResetPasswordRequest, VerifyRequest, NoteRequest } from '../types';
+import { LoginRequest, RegisterRequest, GoogleLoginRequest, ForgotPasswordRequest, ResetPasswordRequest, VerifyRequest, NoteRequest, LabelRequest } from '../types';
 
 const axiosClient: AxiosInstance = axios.create({
     baseURL: 'http://localhost:8080/api',
@@ -31,6 +31,27 @@ export const authApi = {
     resetPassword: (data: ResetPasswordRequest) => axiosClient.post('/auth/reset-password', data)
 };
 
+export const labelApi = {
+    getAll: () => axiosClient.get('/labels'),
+    create: (data: LabelRequest) => axiosClient.post('/labels', data),
+    update: (id: number, data: LabelRequest) => axiosClient.put(`/labels/${id}`, data),
+    delete: (id: number) => axiosClient.delete(`/labels/${id}`),
+};
+
+export const attachmentApi = {
+    upload: (file: File, noteId: number) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return axiosClient.post(`/attachments/notes/${noteId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+
+    delete: (id: number) => axiosClient.delete(`/attachments/${id}`),
+};
+
 export const noteApi = {
     // --- CÁC HÀM CŨ (Giữ nguyên) ---
     getAll: (page: number = 0, size: number = 10) => 
@@ -49,7 +70,8 @@ export const noteApi = {
     addLabel: (noteId: number, labelId: number) => 
         axiosClient.post(`/notes/${noteId}/labels/${labelId}`),
 
-    // --- CÁC HÀM MỚI (THÊM VÀO) ---
+    removeLabel: (noteId: number, labelId: number) => 
+        axiosClient.delete(`/notes/${noteId}/labels/${labelId}`),
 
     // 1. Lấy danh sách đã Lưu trữ
     getArchived: (page: number = 0, size: number = 10) => 
@@ -67,6 +89,16 @@ export const noteApi = {
     
     // 5. Bỏ lưu trữ (Unarchive)
     unarchive: (id: number) => axiosClient.put(`/notes/${id}/unarchive`),
+
+    // 6.Lấy nhắc
+    getReminders: (page: number = 0, size: number = 50) => 
+      axiosClient.get(`/notes/reminders?page=${page}&size=${size}`),
+
+    // 7. Lấy nhãn
+    getByLabel: (labelId: number, page: number = 0, size: number = 50) => 
+        axiosClient.get(`/notes/label/${labelId}?page=${page}&size=${size}`),
 };
+
+
 
 export default axiosClient;
