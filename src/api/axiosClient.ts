@@ -107,9 +107,16 @@ export const userApi = {
         dateOfBirth?: string | null; // Cho phép string hoặc null
     }) => axiosClient.put('/users/profile', data),
 
-    uploadAvatar: (file: File) => {
+    uploadAvatar: (file: File, cropData: { x: number; y: number; width: number; height: number }) => {
         const formData = new FormData();
         formData.append('file', file);
+        
+        // Gửi kèm tọa độ cắt lên server
+        formData.append('x', Math.round(cropData.x).toString());
+        formData.append('y', Math.round(cropData.y).toString());
+        formData.append('w', Math.round(cropData.width).toString());
+        formData.append('h', Math.round(cropData.height).toString());
+
         return axiosClient.post('/users/avatar', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });

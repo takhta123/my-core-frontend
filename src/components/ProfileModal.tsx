@@ -4,7 +4,6 @@ import { User } from '../types';
 import { userApi, authApi } from '../api/axiosClient';
 import { message, Tabs, Input, Button, Modal, Slider, Select, DatePicker } from 'antd';
 import Cropper from 'react-easy-crop';
-import { getCroppedImg } from '../utils/cropImage';
 import dayjs from 'dayjs'; // Cần cài dayjs nếu dùng DatePicker của Antd
 
 interface ProfileModalProps {
@@ -16,6 +15,7 @@ interface ProfileModalProps {
 
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdateUser }) => {
   const [activeTab, setActiveTab] = useState('1');
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
   
   // --- STATE CHO EDIT INFO ---
   const [fullName, setFullName] = useState(user?.fullName || '');
@@ -41,13 +41,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
 
   // --- LOGIC ẢNH ---
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      const imageDataUrl = await readFile(file);
-      setImageSrc(imageDataUrl as string);
-      setIsCropperOpen(true);
-    }
-  };
+  if (e.target.files && e.target.files.length > 0) {
+    const file = e.target.files[0];
+    setOriginalFile(file); // <--- LƯU FILE GỐC TẠI ĐÂY
+    const imageDataUrl = await readFile(file);
+    setImageSrc(imageDataUrl as string);
+    setIsCropperOpen(true);
+  }
+};
 
   const readFile = (file: File) => new Promise((resolve) => {
       const reader = new FileReader();
@@ -60,31 +61,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
   }, []);
 
   const handleSaveAvatar = async () => {
-    if (!imageSrc || !croppedAreaPixels) return;
+    // Kiểm tra xem có file gốc và tọa độ cắt chưa
+    if (!originalFile || !croppedAreaPixels) return;
+    
     try {
       setUploadingAvatar(true);
-      
-      // 1. Lấy Blob từ hàm crop (Đã sửa thành PNG ở bước trước)
-      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-      
-      if (!croppedBlob) {
-          console.error("Lỗi: Blob ảnh trả về null");
-          return;
-      }
 
-      // Kiểm tra dung lượng file (nếu quá nhỏ < 100 bytes nghĩa là ảnh lỗi)
-      console.log("Kích thước ảnh:", croppedBlob.size); 
-
-      // 2. Tạo File object chuẩn PNG
-      const file = new File([croppedBlob], "avatar.png", { type: "image/png" });
-
-      // 3. Gọi API
-      await userApi.uploadAvatar(file);
+      // KHÔNG CẦN GỌI getCroppedImg NỮA
+      // Gửi thẳng file gốc + tọa độ cắt (croppedAreaPixels)
+      await userApi.uploadAvatar(originalFile, croppedAreaPixels);
       
       message.success("Cập nhật Avatar thành công!");
       setIsCropperOpen(false);
-      
-      // 4. Quan trọng: Load lại user
       onUpdateUser(); 
 
     } catch (e) {
