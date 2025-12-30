@@ -4,7 +4,7 @@ import { User } from '../types';
 import { userApi, authApi } from '../api/axiosClient';
 import { message, Tabs, Input, Button, Modal, Slider, Select, DatePicker } from 'antd';
 import Cropper from 'react-easy-crop';
-import { getCroppedImg }from '../utils/cropImage';
+import { getCroppedImg } from '../utils/cropImage';
 import dayjs from 'dayjs'; // Cần cài dayjs nếu dùng DatePicker của Antd
 
 interface ProfileModalProps {
@@ -63,40 +63,58 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
     if (!imageSrc || !croppedAreaPixels) return;
     try {
       setUploadingAvatar(true);
+      
+      // 1. Lấy Blob từ hàm crop (Đã sửa thành PNG ở bước trước)
       const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-
+      
       if (!croppedBlob) {
-            console.error("Lỗi: Không thể cắt ảnh");
-            return;
-        }
-    
+          console.error("Lỗi: Blob ảnh trả về null");
+          return;
+      }
+
+      // Kiểm tra dung lượng file (nếu quá nhỏ < 100 bytes nghĩa là ảnh lỗi)
+      console.log("Kích thước ảnh:", croppedBlob.size); 
+
+      // 2. Tạo File object chuẩn PNG
       const file = new File([croppedBlob], "avatar.png", { type: "image/png" });
-      
-      
+
+      // 3. Gọi API
       await userApi.uploadAvatar(file);
+      
       message.success("Cập nhật Avatar thành công!");
       setIsCropperOpen(false);
-      onUpdateUser(); // Reload data
+      
+      // 4. Quan trọng: Load lại user
+      onUpdateUser(); 
+
     } catch (e) {
-      message.error("Lỗi upload ảnh");
+      console.error("Lỗi upload:", e);
+      message.error("Lỗi khi tải ảnh lên");
     } finally {
       setUploadingAvatar(false);
     }
-  };
+};
 
   // --- LOGIC UPDATE INFO ---
   const handleUpdateInfo = async () => {
     setLoadingUpdate(true);
     try {
-      // Giai đoạn 1: Chỉ gửi fullName. Giai đoạn 2: Sẽ gửi thêm address, gender...
       await userApi.updateProfile({ 
-          fullName, address, gender, dateOfBirth: dob ? dob.format('YYYY-MM-DD') : null 
+          fullName,
+          address, 
+          gender, 
+          // Chuyển đổi Dayjs sang string YYYY-MM-DD để Backend Java LocalDate hiểu
+          dateOfBirth: dob ? dob.format('YYYY-MM-DD') : undefined 
       });
       message.success("Cập nhật thông tin thành công");
       onUpdateUser();
-    } catch (e) { message.error("Lỗi cập nhật"); }
-    finally { setLoadingUpdate(false); }
-  };
+    } catch (e) { 
+        message.error("Lỗi cập nhật"); 
+        console.error(e);
+    } finally { 
+        setLoadingUpdate(false); 
+    }
+};
 
   // --- LOGIC ĐỔI MẬT KHẨU ---
   const handleSendOtp = async () => {
@@ -168,22 +186,43 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             </div>
                            
                            
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4 mt-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh</label>
-                                    <DatePicker className="w-full" size="large" value={dob} onChange={setDob} format="DD/MM/YYYY"/>
+                                    <DatePicker 
+                                        className="w-full" 
+                                        size="large" 
+                                        value={dob} 
+                                        onChange={setDob} 
+                                        format="DD/MM/YYYY"
+                                        placeholder="Chọn ngày sinh"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
-                                    <Select className="w-full" size="large" value={gender} onChange={setGender} options={[
-                                        {value: 'MALE', label: 'Nam'}, {value: 'FEMALE', label: 'Nữ'}, {value: 'OTHER', label: 'Khác'}
-                                    ]}/>
+                                    <Select 
+                                        className="w-full" 
+                                        size="large" 
+                                        value={gender} 
+                                        onChange={setGender}
+                                        options={[
+                                            {value: 'MALE', label: 'Nam'}, 
+                                            {value: 'FEMALE', label: 'Nữ'}, 
+                                            {value: 'OTHER', label: 'Khác'}
+                                        ]}
+                                    />
                                 </div>
                             </div>
-                            <div>
+                            <div className="mt-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
-                                <Input value={address} onChange={e => setAddress(e.target.value)} size="large" />
-                            </div> 
+                                <Input 
+                                    value={address} 
+                                    onChange={e => setAddress(e.target.value)} 
+                                    size="large" 
+                                    placeholder="Nhập địa chỉ nơi ở"
+                                />
+                            </div>
+                           
                             
 
                             <Button type="primary" icon={<Save size={16}/>} size="large" onClick={handleUpdateInfo} loading={loadingUpdate} className="mt-2">

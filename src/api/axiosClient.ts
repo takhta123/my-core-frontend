@@ -99,8 +99,13 @@ export const noteApi = {
 export const userApi = {
     getMyProfile: () => axiosClient.get('/users/me'),
 
-    updateProfile: (data: { fullName?: string; avatarUrl?: string }) => 
-        axiosClient.put('/users/profile', data),
+    updateProfile: (data: { 
+        fullName?: string; 
+        avatarUrl?: string;
+        address?: string;
+        gender?: string;
+        dateOfBirth?: string | null; // Cho phép string hoặc null
+    }) => axiosClient.put('/users/profile', data),
 
     uploadAvatar: (file: File) => {
         const formData = new FormData();

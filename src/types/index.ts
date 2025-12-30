@@ -8,7 +8,6 @@ export interface User {
     enabled: boolean;
     createdAt: string;
     updatedAt: string;
-    twoFactorEnabled?: boolean; 
     address?: string;
     gender?: string;
     dateOfBirth?: string;
