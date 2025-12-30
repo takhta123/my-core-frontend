@@ -39,15 +39,17 @@ export const labelApi = {
 };
 
 export const attachmentApi = {
-    upload: (file: File, noteId: number) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return axiosClient.post(`/attachments/notes/${noteId}`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-    },
+  upload: (file: File, noteId: number) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // SỬA: Phải khớp chính xác với backend là /attachments/notes/${noteId}
+    return axiosClient.post(`/attachments/notes/${noteId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 
     delete: (id: number) => axiosClient.delete(`/attachments/${id}`),
 };

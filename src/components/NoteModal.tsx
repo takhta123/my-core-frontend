@@ -219,40 +219,33 @@ useEffect(() => {
   };
 
   const triggerFileUpload = () => {
-    // Kiểm tra nếu là ghi chú mới chưa có ID
+    // Nếu là ghi chú mới (chưa có ID), chặn upload và báo lỗi
     if (!note?.id) {
-        message.warning("Vui lòng lưu ghi chú trước khi tải ảnh!"); // Thêm thông báo này
+        message.warning("Vui lòng lưu ghi chú trước khi thêm ảnh!"); 
         return;
     }
     
-    // Kiểm tra xem ref có hoạt động không
-    if (fileInputRef.current) {
-        fileInputRef.current.click();
-    } else {
-        console.error("Input file không tìm thấy trong DOM");
-    }
+    // Kích hoạt input file
+    fileInputRef.current?.click();
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !note) return;
+    if (!file || !note) return; // Kiểm tra an toàn
 
-    // Validate cơ bản (VD: < 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        message.error("File quá lớn (Tối đa 5MB)");
-        return;
-    }
-
-    setIsUploading(true);
+    setIsUploading(true); // Bật loading nếu có
     try {
         const res: any = await attachmentApi.upload(file, note.id);
         if (res.code === 1000) {
             const newAttachment = res.result;
-            const updatedAttachments = [...attachments, newAttachment];
+            
+            // Cập nhật state cục bộ để hiện ảnh ngay
+            const updatedAttachments = [...(attachments || []), newAttachment];
             setAttachments(updatedAttachments);
             
-            // Cập nhật lại UI cha
+            // Gọi callback để cập nhật ra NoteCard bên ngoài
             onUpdate({ ...note, attachments: updatedAttachments });
+            
             message.success("Đã tải ảnh lên");
         }
     } catch (error) {
@@ -260,7 +253,7 @@ useEffect(() => {
         message.error("Lỗi tải ảnh");
     } finally {
         setIsUploading(false);
-        // Reset input để chọn lại cùng file nếu muốn
+        // Reset input để có thể chọn lại cùng 1 file nếu lỡ xóa nhầm
         if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -393,7 +386,14 @@ useEffect(() => {
                             <Dropdown menu={{ items: colorMenu }} trigger={['click']} placement="top">
                                 <button className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors" title="Đổi màu"><Palette size={18} /></button>
                             </Dropdown>
-                            <button className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors"><Image size={18} /></button>
+                            <Tooltip title={note?.id ? "Thêm ảnh" : "Lưu trước để thêm ảnh"}>
+                                <button 
+                                    onClick={triggerFileUpload}  // <--- QUAN TRỌNG: Phải có dòng này mới mở được file
+                                    className={`p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors ${!note?.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    <Image size={18} />
+                                </button>
+                            </Tooltip>
                             <Popover content={labelContent} trigger="click" placement="bottom" arrow={false}>
                                 <button className="p-2 hover:bg-black/10 rounded-full text-gray-700 transition-colors" title="Gắn nhãn">
                                     <TagIcon size={18} />
